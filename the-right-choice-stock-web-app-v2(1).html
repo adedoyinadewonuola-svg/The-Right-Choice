@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Right Choice — Stock & Sales</title>
+<style>
+:root{--brown:#4a2c20;--gold:#c9a227;--cream:#fbf8f1;--ink:#241d1a;--muted:#746b66;--line:#e6ded7;--card:#fff;--green:#287a4b;--red:#b33a3a}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:linear-gradient(135deg,var(--brown),#6b4230);color:#fff;padding:20px 28px;position:sticky;top:0;z-index:5;box-shadow:0 2px 12px #0002}
+.brand{display:flex;align-items:center;gap:12px}.brand h1{font-size:22px;margin:0}.brand small{opacity:.75}
+nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}nav button,.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;background:#ffffff18;color:#fff}nav button.active,nav button:hover{background:var(--gold);color:#241d1a}
+main{max-width:1500px;margin:auto;padding:24px}.view{display:none}.view.active{display:block}
+.toolbar{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:18px}.toolbar h2{margin:0;font-size:25px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.input,select{border:1px solid var(--line);background:#fff;border-radius:8px;padding:10px 11px;color:var(--ink)}
+.btn{background:var(--brown);color:#fff}.btn.gold{background:var(--gold);color:#241d1a}.btn.light{background:#fff;color:var(--brown);border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 14px #00000008}.metric{font-size:28px;font-weight:800;margin-top:6px}.label{font-size:13px;color:var(--muted)}
+.table-wrap{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto;box-shadow:0 4px 14px #00000008}.table-wrap table{width:100%;border-collapse:collapse;min-width:1150px}th{background:#f2ebe3;color:var(--brown);font-size:12px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}td.num,th.num{text-align:right}td input{width:78px;padding:7px;border:1px solid #d9cfc7;border-radius:6px;background:#fff}td input:focus{outline:2px solid #c9a22755;border-color:var(--gold)}
+.section{margin-top:18px}.section h3{margin:0 0 10px}.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field input{width:100%}
+.notice{padding:12px 14px;border-radius:10px;background:#fff7dc;border:1px solid #ecd788;margin:12px 0}.success{color:var(--green)}.danger{color:var(--red)}
+.history-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){main{padding:14px}.grid,.form-grid{grid-template-columns:1fr}.brand h1{font-size:18px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div style="font-size:30px">₦</div><div><h1>The Right Choice</h1><small>Continuous Stock, Sales & End-of-Day Management</small></div></div>
+  <nav id="nav">
+    <button class="active" data-view="today">Daily Stock</button>
+    <button data-view="history">History</button>
+    <button data-view="prices">Price List</button>
+    <button data-view="dashboard">Dashboard</button>
+  </nav>
+</header>
+
+<main>
+<section id="today" class="view active">
+  <div class="toolbar">
+    <div><h2>Daily Stock</h2><div class="label">Enter any date manually. Each new day carries forward the latest earlier closing stock automatically.</div></div>
+    <div class="controls"><input id="date" class="input" type="date" title="Enter or select the date manually"><button class="btn light" onclick="copyPreviousDay()">Carry Forward</button><button class="btn gold" onclick="saveDay()">Save Day</button></div>
+  </div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="field"><label>Logged by</label><input id="loggedBy" class="input" placeholder="Name of person entering data"></div>
+      <div class="field"><label>Opening stock source</label><input id="source" class="input" value="Previous day's closing stock" readonly></div>
+      <div class="field"><label>Expected sales (₦)</label><input id="expectedSales" class="input" readonly></div>
+      <div class="field"><label>Actual cash collected (₦)</label><input id="cashCollected" class="input" readonly></div>
+    </div>
+  </div>
+
+  <div class="table-wrap section">
+    <table><thead><tr>
+      <th>Category</th><th>Item</th><th class="num">Opening Stock</th><th class="num">Received</th><th class="num">Total Stock</th><th class="num">Closing Stock</th><th class="num">Transfer</th><th class="num">Supply</th><th class="num">B/D</th><th class="num">Qty Sold</th><th class="num">Revenue</th>
+    </tr></thead><tbody id="stockBody"></tbody></table>
+  </div>
+
+  <div class="grid section">
+    <div class="card"><div class="label">Total Units Sold</div><div class="metric" id="unitsSold">0</div></div>
+    <div class="card"><div class="label">Expected Sales</div><div class="metric" id="expectedMetric">₦0</div></div>
+    <div class="card"><div class="label">POS</div><input id="pos" class="input" type="number" min="0" step="0.01" placeholder="POS amount"></div>
+    <div class="card"><div class="label">Cash Collected</div><div class="metric" id="cashMetric">₦0</div><small class="label">Expected Sales − POS</small></div>
+  </div>
+
+  <div class="card section">
+    <h3>Expenses</h3>
+    <div class="form-grid">
+      <div class="field"><label>Expense description</label><input id="expenseNote" class="input" placeholder="e.g. transport"></div>
+      <div class="field"><label>Amount (₦)</label><input id="expenseAmount" class="input" type="number" min="0" step="0.01"></div>
+      <div class="field"><label>Total expenses</label><input id="totalExpenses" class="input" readonly></div>
+      <div class="field"><label>Cash after expenses</label><input id="cashAfterExpenses" class="input" readonly></div>
+    </div>
+    <button class="btn" style="margin-top:12px" onclick="addExpense()">Add Expense</button>
+    <div id="expenseList" class="section"></div>
+  </div>
+</section>
+
+<section id="history" class="view">
+  <div class="toolbar"><div><h2>Daily History</h2><div class="label">Your records stay separated by date.</div></div><button class="btn light" onclick="exportData()">Export Backup</button></div>
+  <div class="card" id="historyList"></div>
+</section>
+
+<section id="prices" class="view">
+  <div class="toolbar"><div><h2>Price List</h2><div class="label">Edit selling prices here; daily revenue uses these prices.</div></div><input id="priceSearch" class="input" placeholder="Search products..." oninput="renderPrices()"></div>
+  <div class="table-wrap"><table><thead><tr><th>Category</th><th>Item</th><th class="num">Cost Price</th><th class="num">Selling Price</th><th class="num">Margin</th><th class="num">Margin %</th></tr></thead><tbody id="priceBody"></tbody></table></div>
+</section>
+
+<section id="dashboard" class="view">
+  <div class="toolbar"><div><h2>Dashboard</h2><div class="label">A running view of your business, not a single-day snapshot.</div></div></div>
+  <div class="grid">
+    <div class="card"><div class="label">Days Recorded</div><div class="metric" id="daysRecorded">0</div></div>
+    <div class="card"><div class="label">Total Sales</div><div class="metric" id="allSales">₦0</div></div>
+    <div class="card"><div class="label">Total POS</div><div class="metric" id="allPOS">₦0</div></div>
+    <div class="card"><div class="label">Total Expenses</div><div class="metric" id="allExpenses">₦0</div></div>
+  </div>
+  <div class="card section"><h3>Continuity</h3><p id="continuityText" class="label"></p></div>
+</section>
+</main>
+
+<script>
+const seed = {"products": [{"name": "Choice Jumbo", "category": "Breads & Snacks", "cost": null, "price": 2000}, {"name": "Choice Prime", "category": "Breads & Snacks", "cost": null, "price": null}, {"name": "Choice Family Size", "category": "Breads & Snacks", "cost": null, "price": 1500}, {"name": "So Soft Jumbo", "category": "Breads & Snacks", "cost": 1800, "price": 2000}, {"name": "So Soft Family", "category": "Breads & Snacks", "cost": 1400, "price": 1500}, {"name": "Coconut Bread", "category": "Breads & Snacks", "cost": null, "price": 2000}, {"name": "Milk Bread", "category": "Breads & Snacks", "cost": null, "price": 2000}, {"name": "Cake Bread", "category": "Breads & Snacks", "cost": null, "price": 2000}, {"name": "Sardine Bread", "category": "Breads & Snacks", "cost": null, "price": 2000}, {"name": "Meat Pie", "category": "Breads & Snacks", "cost": null, "price": 800}, {"name": "Chicken Pie", "category": "Breads & Snacks", "cost": null, "price": 800}, {"name": "Sausage Roll", "category": "Breads & Snacks", "cost": null, "price": 600}, {"name": "Super Roll", "category": "Breads & Snacks", "cost": null, "price": 900}, {"name": "Egg Roll", "category": "Breads & Snacks", "cost": null, "price": 600}, {"name": "Chopmore", "category": "Breads & Snacks", "cost": null, "price": 900}, {"name": "Donuts", "category": "Breads & Snacks", "cost": null, "price": 500}, {"name": "Jam donuts", "category": "Breads & Snacks", "cost": null, "price": 600}, {"name": "Cup Cake", "category": "Breads & Snacks", "cost": null, "price": 500}, {"name": "Foil Cake", "category": "Breads & Snacks", "cost": null, "price": 2000}, {"name": "Special Cake", "category": "Breads & Snacks", "cost": null, "price": null}, {"name": "Order Cake", "category": "Breads & Snacks", "cost": null, "price": null}, {"name": "Gala", "category": "Breads & Snacks", "cost": null, "price": 200}, {"name": "Plantain Chips", "category": "Breads & Snacks", "cost": null, "price": 5000}, {"name": "Chin Chin", "category": "Breads & Snacks", "cost": null, "price": 6000}, {"name": "Local Snacks", "category": "Breads & Snacks", "cost": 1000, "price": 1200}, {"name": "Bottle Chocolate", "category": "Breads & Snacks", "cost": null, "price": null}, {"name": "Bounty", "category": "Breads & Snacks", "cost": null, "price": 1400}, {"name": "Snickers", "category": "Breads & Snacks", "cost": null, "price": 1300}, {"name": "Pringles", "category": "Breads & Snacks", "cost": null, "price": 3500}, {"name": "Fan Ice Cream 3Ltrs", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Fan Ice Cream 2Ltrs", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Fan Ice Cream 1Ltr", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3875, "price": 4700}, {"name": "Fan Ice Cream 450ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 2432, "price": 3250}, {"name": "Fan Ice Cream 250ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1090, "price": 1650}, {"name": "Fan Ice Cream 120ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 527, "price": 850}, {"name": "Fan Ice Cream Vanilla Sachet", "category": "Ice Cream, Yoghurt & Parfait", "cost": 362, "price": 600}, {"name": "Fan Ice Cream Strawberry Sachet", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 650}, {"name": "Fan Ice Cream Go Slo BIG", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Fan Ice Cream Go Slo Small", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Fan Ice Cream Chips", "category": "Ice Cream, Yoghurt & Parfait", "cost": 4939, "price": 5500}, {"name": "Supreme 3Ltrs", "category": "Ice Cream, Yoghurt & Parfait", "cost": 9425, "price": 11000}, {"name": "Supreme 2Ltrs", "category": "Ice Cream, Yoghurt & Parfait", "cost": 5765.25, "price": 7200}, {"name": "Supreme 1Ltr", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3384.5, "price": 4700}, {"name": "Supreme 450ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1994.75, "price": 3250}, {"name": "Supreme 250ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 829.79, "price": 1650}, {"name": "Supreme 120ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 419.3, "price": 850}, {"name": "Supreme Sachet", "category": "Ice Cream, Yoghurt & Parfait", "cost": 425.5, "price": 600}, {"name": "Frosty Bites 1Ltr", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3750, "price": 4800}, {"name": "Frosty Bites 500ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 2500, "price": 3200}, {"name": "Frosty Bites 250ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1125, "price": 1800}, {"name": "Frosty Bites Cup", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 1200}, {"name": "Frosty Bites Popsicles", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1000, "price": 1500}, {"name": "Frosty Bites Crunch Peanut", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1100, "price": 1600}, {"name": "Hollandia Big", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 1800}, {"name": "Hollandia Midi", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 800}, {"name": "Hollandia Small", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Habib 1Ltr", "category": "Ice Cream, Yoghurt & Parfait", "cost": 2700, "price": null}, {"name": "Habib 500ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1400, "price": 2200}, {"name": "Habib Big Cup", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1700, "price": 2700}, {"name": "Habib Small Cup", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1100, "price": null}, {"name": "Habib Bottle", "category": "Ice Cream, Yoghurt & Parfait", "cost": 900, "price": 1500}, {"name": "Rufaidah 2Ltrs", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Rufaidah 1Ltr", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3000, "price": 4200}, {"name": "Rufaidah Big Cup", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1500, "price": 2700}, {"name": "Rufaidah Small Cup", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Rufaidah Bottle", "category": "Ice Cream, Yoghurt & Parfait", "cost": 1000, "price": 1500}, {"name": "Rufaidah Fruity", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 4200}, {"name": "Nutri Choco", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": null}, {"name": "Viju Yoghurt", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 800}, {"name": "RC Yoghurt", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 1300}, {"name": "Yoghurt Parfait", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3000, "price": 4200}, {"name": "Cake Parfait", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3000, "price": 4000}, {"name": "Farmfresh 1Ltr", "category": "Ice Cream, Yoghurt & Parfait", "cost": 4570, "price": 5000}, {"name": "Farmfresh 500ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 2520, "price": 3000}, {"name": "Farmfresh Greek", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3150, "price": 3500}, {"name": "Refresh 1Ltr", "category": "Ice Cream, Yoghurt & Parfait", "cost": 3780, "price": 5000}, {"name": "Refresh 500ml", "category": "Ice Cream, Yoghurt & Parfait", "cost": 2100, "price": 3000}, {"name": "Vita Milk", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 2000}, {"name": "Fura", "category": "Ice Cream, Yoghurt & Parfait", "cost": null, "price": 200}, {"name": "Drinks", "category": "Drinks & Water", "cost": 375, "price": 500}, {"name": "Water", "category": "Drinks & Water", "cost": 120.8, "price": 200}, {"name": "Cway", "category": "Drinks & Water", "cost": 1700, "price": 1900}, {"name": "Dudu Juice", "category": "Drinks & Water", "cost": null, "price": 600}, {"name": "Sosa Big/five Alive", "category": "Drinks & Water", "cost": null, "price": 1500}, {"name": "Sosa Small", "category": "Drinks & Water", "cost": null, "price": 600}, {"name": "Energy Drink", "category": "Drinks & Water", "cost": 383, "price": 600}, {"name": "Viju Choco", "category": "Drinks & Water", "cost": 958, "price": 1200}, {"name": "Viju Wheat", "category": "Drinks & Water", "cost": 958, "price": 1200}, {"name": "Maltina Pet", "category": "Drinks & Water", "cost": 708, "price": 1000}, {"name": "Lucozade Boost", "category": "Drinks & Water", "cost": null, "price": 1000}, {"name": "Flying Fish", "category": "Drinks & Water", "cost": null, "price": 1200}, {"name": "Exotic Big", "category": "Drinks & Water", "cost": null, "price": 1500}, {"name": "Exotic Midi", "category": "Drinks & Water", "cost": null, "price": 1200}, {"name": "Exotic Can", "category": "Drinks & Water", "cost": null, "price": 800}, {"name": "Can Drinks", "category": "Drinks & Water", "cost": null, "price": 700}, {"name": "Can Schweppes", "category": "Drinks & Water", "cost": null, "price": 700}, {"name": "Can Farouz", "category": "Drinks & Water", "cost": null, "price": 800}, {"name": "Can Malt - 850", "category": "Drinks & Water", "cost": null, "price": 850}, {"name": "Smirnoff Ice", "category": "Drinks & Water", "cost": null, "price": 1500}, {"name": "Monster", "category": "Drinks & Water", "cost": null, "price": 1200}, {"name": "Smooth/Origin", "category": "Drinks & Water", "cost": null, "price": 1500}, {"name": "Bullet", "category": "Drinks & Water", "cost": null, "price": 1500}, {"name": "Chivita Active Big", "category": "Drinks & Water", "cost": null, "price": 2200}, {"name": "Chivita Active Midi", "category": "Drinks & Water", "cost": null, "price": null}, {"name": "Chivita Orange", "category": "Drinks & Water", "cost": null, "price": 2200}, {"name": "Chivita Grapes", "category": "Drinks & Water", "cost": null, "price": 2200}, {"name": "pocari Sweat", "category": "Drinks & Water", "cost": 943, "price": 1200}, {"name": "Milo Refill", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 3700}, {"name": "Dano Refill", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 3500}, {"name": "Peak Refill", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 4200}, {"name": "3 Crown Refill", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 3200}, {"name": "Evap Liquid", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 1000}, {"name": "Peak Liquid", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 850}, {"name": "3 Crown Liquid", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 850}, {"name": "Peak Sachet", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 250}, {"name": "3 Crown Sachet", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 250}, {"name": "Milo Sachet", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 250}, {"name": "3 in 1 Milo Sachet", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 300}, {"name": "Cashew Nut", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 6500}, {"name": "Ground Nut", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 3000}, {"name": "Shortbread Big", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 2600}, {"name": "Shortbread Small", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 1600}, {"name": "Munchkins", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 500}, {"name": "Fab Biscuit", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 500}, {"name": "Mentos Chupa Belt", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 100}, {"name": "Mentos Chupa", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 200}, {"name": "Mentos Long", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 500}, {"name": "Mentos Short", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 250}, {"name": "Mentos Big Cup", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 3500}, {"name": "Mentos Midi Cup", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 2500}, {"name": "Mentos Small Cup", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 1000}, {"name": "Mentos Sachet - 350", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 350}, {"name": "Mentos Sweet - 350", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 350}, {"name": "Mentos Gum - 200", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 200}, {"name": "Centre Fresh (gum -100)", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 100}, {"name": "Alpenliebe Big - 350", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 350}, {"name": "Alpenliebe Small - 100", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": 100}, {"name": "Flour", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Butter", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Sugar", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Yeast", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Salt", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Vegetable Oil", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Eggs", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Beef Satis", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Minced Meat", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Meat Sauce", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Chicken Sauce", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Flavours", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Improver", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Icing Sugar", "category": "Bakery Raw Materials", "cost": null, "price": null}, {"name": "Cake Board / Box", "category": "Packaging", "cost": null, "price": null}, {"name": "Nylons", "category": "Packaging", "cost": null, "price": null}, {"name": "Groundnut", "category": "Provisions, Biscuits & Sweets", "cost": null, "price": null}, {"name": "Viju Wheat/Baked Yoghurt", "category": "Drinks & Water", "cost": null, "price": null}], "initial": {"Milo Refill": {"opening": 1, "category": "Provisions, Biscuits & Sweets"}, "Chopmore": {"opening": 1, "category": "Breads & Snacks"}, "Peak Sachet": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "3 Crown Sachet": {"opening": 2, "category": "Provisions, Biscuits & Sweets"}, "Evap Liquid": {"opening": 21, "category": "Provisions, Biscuits & Sweets"}, "Milo Sachet": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "3 in 1 Milo Sachet": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Cashew Nut": {"opening": 2, "category": "Provisions, Biscuits & Sweets"}, "Groundnut": {"opening": 2, "category": "Provisions, Biscuits & Sweets"}, "Shortbread Big": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Shortbread Small": {"opening": 3, "category": "Provisions, Biscuits & Sweets"}, "Munchkins": {"opening": 1, "category": "Provisions, Biscuits & Sweets"}, "Fab Biscuit": {"opening": 1, "category": "Provisions, Biscuits & Sweets"}, "Mentos Chupa Belt": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Mentos Chupa": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Mentos Long": {"opening": 3, "category": "Provisions, Biscuits & Sweets"}, "Mentos Short": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Mentos Big Cup": {"opening": 7, "category": "Provisions, Biscuits & Sweets"}, "Mentos Midi Cup": {"opening": 6, "category": "Provisions, Biscuits & Sweets"}, "Mentos Small Cup": {"opening": 32, "category": "Provisions, Biscuits & Sweets"}, "Mentos Sachet - 350": {"opening": 19, "category": "Provisions, Biscuits & Sweets"}, "Mentos Sweet - 350": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Mentos Gum - 200": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Centre Fresh (gum -100)": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Alpenliebe Big - 350": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Alpenliebe Small - 100": {"opening": 0, "category": "Provisions, Biscuits & Sweets"}, "Drinks": {"opening": 61, "category": "Drinks & Water"}, "Water": {"opening": 11, "category": "Drinks & Water"}, "Cway": {"opening": 7, "category": "Drinks & Water"}, "Dudu Juice": {"opening": 0, "category": "Drinks & Water"}, "Sosa Big/five Alive": {"opening": 8, "category": "Drinks & Water"}, "Sosa Small": {"opening": 1, "category": "Drinks & Water"}, "Energy Drink": {"opening": 18, "category": "Drinks & Water"}, "Viju Choco": {"opening": 12, "category": "Drinks & Water"}, "Viju Wheat/Baked Yoghurt": {"opening": 4, "category": "Drinks & Water"}, "Maltina Pet": {"opening": 10, "category": "Drinks & Water"}, "Lucozade Boost": {"opening": 11, "category": "Drinks & Water"}, "Flying Fish": {"opening": 17, "category": "Drinks & Water"}, "Exotic Big": {"opening": 9, "category": "Drinks & Water"}, "Exotic Midi": {"opening": 6, "category": "Drinks & Water"}, "Exotic Can": {"opening": 9, "category": "Drinks & Water"}, "Can Drinks": {"opening": 30, "category": "Drinks & Water"}, "Can Schweppes": {"opening": 19, "category": "Drinks & Water"}, "Can Farouz": {"opening": 10, "category": "Drinks & Water"}, "Can Malt - 850": {"opening": 14, "category": "Drinks & Water"}, "Smirnoff Ice": {"opening": 9, "category": "Drinks & Water"}, "Monster": {"opening": 3, "category": "Drinks & Water"}, "Smooth/Origin": {"opening": 26, "category": "Drinks & Water"}, "Bullet": {"opening": 15, "category": "Drinks & Water"}, "pocari Sweat": {"opening": 24, "category": "Drinks & Water"}, "Fan Ice Cream 1Ltr": {"opening": 1, "category": "Ice Cream, Yoghurt & Parfait"}, "Fan Ice Cream 450ml": {"opening": 41, "category": "Ice Cream, Yoghurt & Parfait"}, "Fan Ice Cream 250ml": {"opening": 12, "category": "Ice Cream, Yoghurt & Parfait"}, "Fan Ice Cream 120ml": {"opening": 44, "category": "Ice Cream, Yoghurt & Parfait"}, "Fan Ice Cream Vanilla Sachet": {"opening": 31, "category": "Ice Cream, Yoghurt & Parfait"}, "Fan Ice Cream Chips": {"opening": 1, "category": "Ice Cream, Yoghurt & Parfait"}, "Supreme 1Ltr": {"opening": 3, "category": "Ice Cream, Yoghurt & Parfait"}, "Supreme 450ml": {"opening": 3, "category": "Ice Cream, Yoghurt & Parfait"}, "Supreme 120ml": {"opening": 54, "category": "Ice Cream, Yoghurt & Parfait"}, "Supreme Sachet": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Frosty Bites 1Ltr": {"opening": 4, "category": "Ice Cream, Yoghurt & Parfait"}, "Frosty Bites 500ml": {"opening": 1, "category": "Ice Cream, Yoghurt & Parfait"}, "Frosty Bites 250ml": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Frosty Bites Popsicles": {"opening": 31, "category": "Ice Cream, Yoghurt & Parfait"}, "Hollandia Big": {"opening": 7, "category": "Ice Cream, Yoghurt & Parfait"}, "Hollandia Midi": {"opening": 4, "category": "Ice Cream, Yoghurt & Parfait"}, "Habib 1Ltr": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Habib 500ml": {"opening": 4, "category": "Ice Cream, Yoghurt & Parfait"}, "Habib Big Cup": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Habib Bottle": {"opening": 1, "category": "Ice Cream, Yoghurt & Parfait"}, "Rufaidah 1Ltr": {"opening": 4, "category": "Ice Cream, Yoghurt & Parfait"}, "Rufaidah Big Cup": {"opening": 18, "category": "Ice Cream, Yoghurt & Parfait"}, "Rufaidah Small Cup": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Rufaidah Bottle": {"opening": 23, "category": "Ice Cream, Yoghurt & Parfait"}, "Viju Yoghurt": {"opening": 29, "category": "Ice Cream, Yoghurt & Parfait"}, "RC Yoghurt": {"opening": 1, "category": "Ice Cream, Yoghurt & Parfait"}, "Yoghurt Parfait": {"opening": 13, "category": "Ice Cream, Yoghurt & Parfait"}, "Cake Parfait": {"opening": 2, "category": "Ice Cream, Yoghurt & Parfait"}, "Farmfresh 1Ltr": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Farmfresh 500ml": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Farmfresh Greek": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Refresh 1Ltr": {"opening": 0, "category": "Ice Cream, Yoghurt & Parfait"}, "Refresh 500ml": {"opening": 1, "category": "Ice Cream, Yoghurt & Parfait"}, "Vita Milk": {"opening": 7, "category": "Ice Cream, Yoghurt & Parfait"}, "So Soft Family": {"opening": 19, "category": "Breads & Snacks"}, "Coconut Bread": {"opening": 0, "category": "Breads & Snacks"}, "Super Roll": {"opening": 0, "category": "Breads & Snacks"}, "Gala": {"opening": 1, "category": "Breads & Snacks"}, "Plantain Chips": {"opening": 1, "category": "Breads & Snacks"}, "Chin Chin": {"opening": 0, "category": "Breads & Snacks"}, "Local Snacks": {"opening": 10, "category": "Breads & Snacks"}, "Bounty": {"opening": 11, "category": "Breads & Snacks"}, "Pringles": {"opening": 2, "category": "Breads & Snacks"}}};
+const KEY='trc_stock_app_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'null');
+if(!db){ db={products:seed.products, days:{}}; }
+else {
+  // Add any products newly present in the workbook without deleting user changes.
+  const known=new Set(db.products.map(p=>p.name));
+  seed.products.forEach(p=>{if(!known.has(p.name)) db.products.push(p)});
+}
+function saveDB(){localStorage.setItem(KEY,JSON.stringify(db));}
+const money=n=>new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(Number(n)||0);
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+function dateStr(){return document.getElementById('date').value}
+function previousDate(d){let x=new Date(d+'T12:00:00');x.setDate(x.getDate()-1);return x.toISOString().slice(0,10)}
+function latestPriorDay(d){return Object.keys(db.days).filter(x=>x<d).sort().pop()}
+
+function baseRows(d){
+  const prior=latestPriorDay(d);
+  return db.products.map(p=>{
+    let opening=0;
+    if(prior && db.days[prior]?.rows?.[p.name]) opening=num(db.days[prior].rows[p.name].closing);
+    else if(!prior && seed.initial[p.name]) opening=num(seed.initial[p.name].opening);
+    return {name:p.name,category:p.category,opening,received:0,closing:opening,transfer:0,supply:0,bd:0};
+  });
+}
+function getDay(d){
+  if(!db.days[d]){
+    const rows={}; baseRows(d).forEach(r=>rows[r.name]=r);
+    db.days[d]={date:d,loggedBy:'',pos:0,expenses:[],rows};
+  }
+  return db.days[d];
+}
+function renderDay(){
+  const d=dateStr(); const day=getDay(d); const body=document.getElementById('stockBody');
+  body.innerHTML='';
+  let expected=0,units=0;
+  db.products.forEach(p=>{
+    const r=day.rows[p.name]||(day.rows[p.name]={name:p.name,category:p.category,opening:0,received:0,closing:0,transfer:0,supply:0,bd:0});
+    const total=num(r.opening)+num(r.received);
+    const sold=Math.max(0,total-num(r.closing)-num(r.transfer)-num(r.supply)-num(r.bd));
+    const rev=sold*num(p.price);
+    expected+=rev;units+=sold;
+    body.insertAdjacentHTML('beforeend',`<tr>
+      <td>${esc(p.category)}</td><td>${esc(p.name)}</td>
+      <td class="num"><input type="number" min="0" value="${num(r.opening)}" data-k="opening" data-item="${esc(p.name)}"></td>
+      <td class="num"><input type="number" min="0" value="${num(r.received)}" data-k="received" data-item="${esc(p.name)}"></td>
+      <td class="num">${total}</td>
+      <td class="num"><input type="number" min="0" value="${num(r.closing)}" data-k="closing" data-item="${esc(p.name)}"></td>
+      <td class="num"><input type="number" min="0" value="${num(r.transfer)}" data-k="transfer" data-item="${esc(p.name)}"></td>
+      <td class="num"><input type="number" min="0" value="${num(r.supply)}" data-k="supply" data-item="${esc(p.name)}"></td>
+      <td class="num"><input type="number" min="0" value="${num(r.bd)}" data-k="bd" data-item="${esc(p.name)}"></td>
+      <td class="num">${sold}</td><td class="num">${money(rev)}</td>
+    </tr>`);
+  });
+  day.loggedBy=day.loggedBy||'';
+  document.getElementById('loggedBy').value=day.loggedBy;
+  document.getElementById('pos').value=num(day.pos)||'';
+  document.getElementById('expectedSales').value=money(expected);
+  document.getElementById('expectedMetric').textContent=money(expected);
+  document.getElementById('unitsSold').textContent=units;
+  const cash=expected-num(day.pos);
+  document.getElementById('cashCollected').value=money(cash);
+  document.getElementById('cashMetric').textContent=money(cash);
+  renderExpenses();
+  updateDashboard();
+}
+document.addEventListener('input',e=>{
+  if(e.target.dataset.item){
+    const d=getDay(dateStr()), r=d.rows[e.target.dataset.item];
+    r[e.target.dataset.k]=num(e.target.value);
+    saveDB(); recalcOnly();
+  }
+  if(e.target.id==='pos'){getDay(dateStr()).pos=num(e.target.value);saveDB();recalcOnly()}
+  if(e.target.id==='loggedBy'){getDay(dateStr()).loggedBy=e.target.value;saveDB()}
+});
+function recalcOnly(){
+  const d=getDay(dateStr());let expected=0,units=0;
+  db.products.forEach(p=>{const r=d.rows[p.name];const total=num(r.opening)+num(r.received);const sold=Math.max(0,total-num(r.closing)-num(r.transfer)-num(r.supply)-num(r.bd));expected+=sold*num(p.price);units+=sold});
+  document.getElementById('expectedSales').value=money(expected);document.getElementById('expectedMetric').textContent=money(expected);document.getElementById('unitsSold').textContent=units;
+  const cash=expected-num(d.pos);document.getElementById('cashCollected').value=money(cash);document.getElementById('cashMetric').textContent=money(cash);
+  renderExpenses();
+}
+function saveDay(){const d=getDay(dateStr());saveDB();alert('Saved '+d.date+' successfully.')}
+function copyPreviousDay(){const d=dateStr(), prior=latestPriorDay(d);if(!prior){alert('No earlier day exists to carry forward.');return}const src=db.days[prior];const day=getDay(d);Object.keys(day.rows).forEach(n=>{if(src.rows[n])day.rows[n].opening=num(src.rows[n].closing),day.rows[n].closing=num(src.rows[n].closing)});saveDB();renderDay()}
+function addExpense(){const day=getDay(dateStr()), note=document.getElementById('expenseNote').value.trim(), amount=num(document.getElementById('expenseAmount').value);if(!amount)return;day.expenses.push({note,amount});document.getElementById('expenseNote').value='';document.getElementById('expenseAmount').value='';saveDB();renderExpenses()}
+function renderExpenses(){const day=getDay(dateStr()), total=day.expenses.reduce((a,x)=>a+num(x.amount),0);document.getElementById('totalExpenses').value=money(total);const cash=num(document.getElementById('cashCollected').value.replace(/[^\d.-]/g,''));document.getElementById('cashAfterExpenses').value=money(cash-total);document.getElementById('expenseList').innerHTML=day.expenses.map((x,i)=>`<div class="history-row"><span>${esc(x.note||'Expense')}</span><strong>${money(x.amount)} <button class="btn light" onclick="removeExpense(${i})">Remove</button></strong></div>`).join('')}
+function removeExpense(i){getDay(dateStr()).expenses.splice(i,1);saveDB();renderExpenses()}
+function renderHistory(){const el=document.getElementById('historyList'), keys=Object.keys(db.days).sort().reverse();el.innerHTML=keys.length?keys.map(d=>{const day=db.days[d];let sales=0;db.products.forEach(p=>{const r=day.rows[p.name]||{};const sold=Math.max(0,num(r.opening)+num(r.received)-num(r.closing)-num(r.transfer)-num(r.supply)-num(r.bd));sales+=sold*num(p.price)});const exp=day.expenses.reduce((a,x)=>a+num(x.amount),0);return `<div class="history-row"><span><strong>${d}</strong><br><small class="label">Logged by ${esc(day.loggedBy||'—')}</small></span><span>${money(sales)} sales · ${money(day.pos)} POS · ${money(exp)} expenses</span><button class="btn light" onclick="openDay('${d}')">Open</button></div>`}).join(''):'<p class="label">No saved days yet.</p>'}
+function openDay(d){document.getElementById('date').value=d;show('today');renderDay()}
+function renderPrices(){const q=(document.getElementById('priceSearch').value||'').toLowerCase();const body=document.getElementById('priceBody');body.innerHTML=db.products.filter(p=>(p.name+' '+p.category).toLowerCase().includes(q)).map((p,i)=>{const margin=num(p.price)-num(p.cost);const pct=p.price?margin/p.price*100:0;return `<tr><td>${esc(p.category)}</td><td>${esc(p.name)}</td><td class="num"><input type="number" min="0" step="0.01" value="${p.cost??''}" onchange="updateCost('${esc(p.name)}',this.value)" placeholder="Cost"></td><td class="num"><input type="number" min="0" step="0.01" value="${p.price??''}" onchange="updatePrice('${esc(p.name)}',this.value)" placeholder="Selling"></td><td class="num">${p.price!=null&&p.cost!=null?money(margin):'—'}</td><td class="num">${p.price!=null&&p.cost!=null?pct.toFixed(1)+'%':'—'}</td></tr>`}).join('')}
+function updatePrice(name,v){const p=db.products.find(x=>x.name===name);if(p){p.price=v===''?null:num(v);saveDB();renderDay();renderPrices()}}
+function updateCost(name,v){const p=db.products.find(x=>x.name===name);if(p){p.cost=v===''?null:num(v);saveDB();renderPrices()}}
+function updateDashboard(){const keys=Object.keys(db.days).sort();let sales=0,pos=0,exp=0;keys.forEach(d=>{const day=db.days[d];pos+=num(day.pos);exp+=day.expenses.reduce((a,x)=>a+num(x.amount),0);db.products.forEach(p=>{const r=day.rows[p.name]||{};const sold=Math.max(0,num(r.opening)+num(r.received)-num(r.closing)-num(r.transfer)-num(r.supply)-num(r.bd));sales+=sold*num(p.price)})});document.getElementById('daysRecorded').textContent=keys.length;document.getElementById('allSales').textContent=money(sales);document.getElementById('allPOS').textContent=money(pos);document.getElementById('allExpenses').textContent=money(exp);document.getElementById('continuityText').textContent=keys.length?`The app currently contains ${keys.length} recorded day(s). For each new date, Opening Stock is taken from the latest earlier day's Closing Stock. Received, Transfer, Supply and B/D are day-specific.`:'Start with the 12 September opening stock imported from your workbook.'}
+function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='the-right-choice-backup.json';a.click();URL.revokeObjectURL(a.href)}
+function show(id){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===id));if(id==='history')renderHistory();if(id==='prices')renderPrices();if(id==='dashboard')updateDashboard()}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));
+document.getElementById('date').value=new Date().toISOString().slice(0,10);
+document.getElementById('date').addEventListener('change', renderDay);
+renderDay();
+</script>
+</body>
+</html>
