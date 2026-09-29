@@ -1,0 +1,71 @@
+// Prisma schema for The Right Choice — stock, sales & end-of-day management
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("staff")
+  createdAt    DateTime @default(now())
+
+  dailyRecords DailyRecord[]
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  category     String
+  cost         Decimal? @db.Decimal(12, 2)
+  price        Decimal? @db.Decimal(12, 2)
+  initialStock Int      @default(0)
+
+  stockEntries StockEntry[]
+}
+
+model DailyRecord {
+  id          String   @id @default(cuid())
+  date        DateTime @unique @db.Date
+  loggedById  String?
+  loggedBy    User?    @relation(fields: [loggedById], references: [id])
+  pos         Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stockEntries StockEntry[]
+  expenses     Expense[]
+}
+
+model StockEntry {
+  id            String @id @default(cuid())
+  dailyRecordId String
+  dailyRecord   DailyRecord @relation(fields: [dailyRecordId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  opening  Int @default(0)
+  received Int @default(0)
+  closing  Int @default(0)
+  transfer Int @default(0)
+  supply   Int @default(0)
+  bd       Int @default(0)
+
+  @@unique([dailyRecordId, productId])
+}
+
+model Expense {
+  id            String  @id @default(cuid())
+  dailyRecordId String
+  dailyRecord   DailyRecord @relation(fields: [dailyRecordId], references: [id], onDelete: Cascade)
+  note          String
+  amount        Decimal @db.Decimal(12, 2)
+}
