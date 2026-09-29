@@ -1,4 +1,4 @@
-import { getOrCreateDailyRecord, parseDateOnly, formatDateOnly } from "@/lib/stock";
+import { dayHasCountedData, getOrCreateDailyRecord, parseDateOnly, todayKey } from "@/lib/stock";
 import { num } from "@/lib/money";
 import DateControls from "@/components/DateControls";
 import DailyStockPanel from "@/components/DailyStockPanel";
@@ -10,7 +10,7 @@ export default async function TodayPage({
   searchParams: Promise<{ date?: string }>;
 }) {
   const params = await searchParams;
-  const dateStr = params.date ?? formatDateOnly(new Date());
+  const dateStr = params.date ?? todayKey();
   const date = parseDateOnly(dateStr);
   const day = await getOrCreateDailyRecord(date);
 
@@ -20,6 +20,7 @@ export default async function TodayPage({
       name: entry.product.name,
       category: entry.product.category,
       price: entry.product.price === null ? null : num(entry.product.price),
+      unitPrice: entry.unitPrice === null ? null : num(entry.unitPrice),
       opening: entry.opening,
       received: entry.received,
       closing: entry.closing,
@@ -30,6 +31,7 @@ export default async function TodayPage({
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 
   const expenses = day.expenses.map((e) => ({ id: e.id, note: e.note, amount: num(e.amount) }));
+  const hasCountedData = dayHasCountedData(day);
 
   return (
     <section>
@@ -41,7 +43,7 @@ export default async function TodayPage({
             automatically.
           </div>
         </div>
-        <DateControls date={dateStr} />
+        <DateControls date={dateStr} hasCountedData={hasCountedData} />
       </div>
 
       <DailyStockPanel

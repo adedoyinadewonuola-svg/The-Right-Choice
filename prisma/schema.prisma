@@ -59,7 +59,15 @@ model StockEntry {
   supply   Int @default(0)
   bd       Int @default(0)
 
+  /// Selling price frozen when this day's entry was created, so later edits to
+  /// Product.price cannot rewrite a day that has already been counted.
+  /// Null means "price was unknown that day" — the current price is used instead.
+  unitPrice Decimal? @db.Decimal(12, 2)
+
   @@unique([dailyRecordId, productId])
+  // Postgres does not index foreign keys; without this, deleting a product cascade-scans every
+  // StockEntry row and EXPLAIN shows a sequential scan.
+  @@index([productId])
 }
 
 model Expense {
@@ -68,4 +76,6 @@ model Expense {
   dailyRecord   DailyRecord @relation(fields: [dailyRecordId], references: [id], onDelete: Cascade)
   note          String
   amount        Decimal @db.Decimal(12, 2)
+
+  @@index([dailyRecordId])
 }

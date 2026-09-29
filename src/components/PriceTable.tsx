@@ -39,15 +39,41 @@ export default function PriceTable({ initialRows }: { initialRows: PriceRow[] })
   const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function handleCostChange(id: string, value: string) {
+    const previous = rows.find((r) => r.id === id);
     const cost = value === "" ? null : num(value);
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, cost } : r)));
-    void updateCost(id, cost);
+    startRowUpdate(async () => {
+      const result = await updateCost(id, cost);
+      if (result?.error) {
+        setRowErrors((prev) => ({ ...prev, [id]: result.error! }));
+        if (previous) setRows((prev) => prev.map((r) => (r.id === id ? previous : r)));
+      } else {
+        setRowErrors((prev) => {
+          const rest = { ...prev };
+          delete rest[id];
+          return rest;
+        });
+      }
+    });
   }
 
   function handlePriceChange(id: string, value: string) {
+    const previous = rows.find((r) => r.id === id);
     const price = value === "" ? null : num(value);
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, price } : r)));
-    void updatePrice(id, price);
+    startRowUpdate(async () => {
+      const result = await updatePrice(id, price);
+      if (result?.error) {
+        setRowErrors((prev) => ({ ...prev, [id]: result.error! }));
+        if (previous) setRows((prev) => prev.map((r) => (r.id === id ? previous : r)));
+      } else {
+        setRowErrors((prev) => {
+          const rest = { ...prev };
+          delete rest[id];
+          return rest;
+        });
+      }
+    });
   }
 
   function handleInfoChange(id: string, field: "name" | "category", value: string) {
